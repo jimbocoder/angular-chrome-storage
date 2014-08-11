@@ -52,7 +52,19 @@
     var ChromeStoreStrategy = function() {
         var chromeStore;
         this.setSync = function(useSync) {
-            chromeStore = !!useSync ? chrome.storage.sync : chrome.storage.local;
+            if (typeof chrome === "undefined" || typeof chrome.storage === "undefined") {
+                throw new Error("Can't use ChromeStoreStrategy; chrome.storage is undefined.");
+            }
+            if (useSync) {
+                // Sync was requested, but is it available?
+                if (chrome.storage.sync) {
+                    chromeStore = chrome.storage.sync;
+                } else {
+                    throw new Error("Can't use sync; chrome.storage.sync is not available");
+                }
+            } else {
+                chromeStore = chrome.storage.local;
+            }
         };
 
 
@@ -115,7 +127,7 @@
 
             // Initialize to non-sync local storage, whichever type is available.
             // Sync has to be explicitly enabled via setSync() if desired.
-            if (!!chrome && !!chrome.storage) {
+            if (typeof chrome !== "undefined" && typeof chrome.storage !== "undefined" && !!chrome.storage) {
                 ChromeStoreStrategy.setSync(false);
                 this.setStrategy(new ChromeStoreStrategy());
             } else {
